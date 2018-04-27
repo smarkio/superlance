@@ -17,6 +17,8 @@ import optparse
 import os
 import smtplib
 import sys
+import socket
+import re
 
 from email.mime.text import MIMEText
 from email.utils import formatdate, make_msgid
@@ -115,7 +117,7 @@ From: %(from)s\nSubject: %(subject)s\nBody:\n%(body)s\n" % email_for_log)
             return {
                 'to': self.to_emails,
                 'from': self.from_email,
-                'subject': self.subject,
+                'subject': self.replace_placeholders(self.subject),
                 'body': '\n'.join(self.get_batch_msgs()),
             }
         return None
@@ -145,3 +147,13 @@ From: %(from)s\nSubject: %(subject)s\nBody:\n%(body)s\n" % email_for_log)
             raise
         s.quit()
 
+    def replace_placeholders(self, field):
+        placeholders = {
+            'hostname': socket.gethostname()
+        }
+
+        for p in placeholders:
+            field = field.replace('[[{0}]]'.format(p), placeholders[p])
+        field = re.sub('\[\[[\w_\.\-]+\]\]', '', field)
+
+        return field
